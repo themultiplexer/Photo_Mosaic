@@ -1,5 +1,10 @@
 #!/usr/bin/env python
+#import sys
+#sys.path.append('C://Users//Joshua//vcpkg//packages//libheif_x64-windows//lib')
 import os, random, argparse
+#os.add_dll_directory('C://Users//Joshua//vcpkg//packages//libheif_x64-windows//lib')
+import whatimage
+import pyheif
 from PIL import Image
 import numpy as np
 
@@ -19,6 +24,13 @@ args = parser.parse_args()
 
 MATCH_INDECES = []
 
+def decodeImage(bytesIo):
+  i = pyheif.read_heif(bytesIo)
+  s = io.BytesIO()
+  pi = Image.frombytes(mode=i.mode, size=i.size, data=i.data)
+  return pi
+
+
 def getImages(images_directory):
     files = os.listdir(images_directory)
     images = []
@@ -26,7 +38,16 @@ def getImages(images_directory):
         filePath = os.path.abspath(os.path.join(images_directory, file))
         try:
             fp = open(filePath, "rb")
-            im = Image.open(fp)
+            fmt = whatimage.identify_image(fp)
+            if fmt in ['heic', 'avif']:
+              im = decodeImage(fp)
+            else:
+              im = Image.open(fp)
+
+            basewidth = 200
+            wpercent = (basewidth/float(im.size[0]))
+            hsize = int((float(im.size[1])*float(wpercent)))
+            im = im.resize((basewidth,hsize), Image.ANTIALIAS)
             images.append(im)
             im.load()
             fp.close()
